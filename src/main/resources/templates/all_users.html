@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>All users</title>
+</head>
+<body>
+<a href="/me">my page</a>
+<h1>All users</h1>
+<ul>
+    <li th:each="user :${users}" style="padding: 5px">
+        <a th:href="@{'user?email=' + ${user.email}}"
+           th:text="${user.firstName + ' ' + user.lastName + ' (' + user.age + ' years, ' + user.getCity() + ')'}"></a>
+    </li>
+</ul>
+<!--<table>-->
+<!--    <tr ">-->
+<!--        <td th:text="${user.firstName + ' ' + user.getLastName()}">First Last</td>-->
+<!--        <td th:text="${user.getEmail()}">user@email.com</td>-->
+<!--    </tr>-->
+<!--</table>-->
+
+</body>
+</html>
