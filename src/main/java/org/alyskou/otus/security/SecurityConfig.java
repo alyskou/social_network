@@ -33,7 +33,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .formLogin()
                 .loginPage("/login")
                 .defaultSuccessUrl("/me",true)
-                .failureUrl("/login?error=true"); // TODO: add bad login password text
+                .failureUrl("/login?error=true");
     }
 
     @Override
