@@ -40,7 +40,7 @@ public class UserService {
 
     @Nullable
     public User getUser(String email) {
-        User user = null;
+        User user;
         try {
             user =  jdbcTemplate.queryForObject(
                     "select * from users where email = ?",
@@ -51,10 +51,11 @@ public class UserService {
             return null;
         }
 
-        List<String> friendEmails = getUserFriends(email);
-        user.setFriendEmails(friendEmails) ;
+        if (user != null) {
+            List<String> friendEmails = getUserFriends(email);
+            user.setFriendEmails(friendEmails) ;
+        }
         return user;
-
     }
 
     public List<User> getAllUsers() {
