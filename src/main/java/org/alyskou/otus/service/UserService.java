@@ -3,10 +3,15 @@ package org.alyskou.otus.service;
 import org.alyskou.otus.data.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.lang.Nullable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -38,6 +43,35 @@ public class UserService {
                 user.getCity());
     }
 
+    public void saveNewUsersBatch(ArrayList<User> users) {
+        long startTimestamp = System.currentTimeMillis();
+        jdbcTemplate.batchUpdate(
+                "insert into users values(?,?,?,?,?,?,?,?)",
+                new BatchPreparedStatementSetter() {
+                    @Override
+                    public void setValues(PreparedStatement ps, int i) throws SQLException {
+                        ps.setString(1, users.get(i).getEmail());
+                        ps.setString(2, passwordEncoder.encode(users.get(i).getPassword()));
+                        ps.setString(3, users.get(i).getFirstName());
+                        ps.setString(4, users.get(i).getLastName());
+                        ps.setString(5, users.get(i).getSex().toString());
+                        ps.setInt(6, users.get(i).getAge());
+                        ps.setString(7, users.get(i).getInterests());
+                        ps.setString(8, users.get(i).getCity());
+                    }
+
+                    @Override
+                    public int getBatchSize() {
+                        return users.size();
+                    }
+                }
+        );
+
+        long endTimestamp = System.currentTimeMillis();
+        System.out.printf("SQL batch update for %d users finished in %dms\n",
+                users.size(), endTimestamp -  startTimestamp);
+    }
+
     @Nullable
     public User getUser(String email) {
         User user;
@@ -59,7 +93,7 @@ public class UserService {
     }
 
     public List<User> getAllUsers() {
-        return jdbcTemplate.query("select * from users", new User.UserRowMapper());
+        return jdbcTemplate.query("select * from users limit 1000", new User.UserRowMapper());
     }
 
     public void addFriend(String fromEmail, String toEmail) {
