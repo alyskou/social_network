@@ -13,12 +13,11 @@
            th:text="${user.firstName + ' ' + user.lastName + ' (' + user.age + ' years, ' + user.getCity() + ')'}"></a>
     </li>
 </ul>
-<!--<table>-->
-<!--    <tr ">-->
-<!--        <td th:text="${user.firstName + ' ' + user.getLastName()}">First Last</td>-->
-<!--        <td th:text="${user.getEmail()}">user@email.com</td>-->
-<!--    </tr>-->
-<!--</table>-->
+
+<!--<form action="/generate_users" method="POST" >-->
+<!--    <input type="number" min="1" th:name="userCount">-->
+<!--    <button type="submit">generate users</button>-->
+<!--</form>-->
 
 </body>
 </html>
