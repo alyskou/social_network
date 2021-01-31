@@ -1,6 +1,7 @@
 package org.alyskou.otus.service;
 
 import org.alyskou.otus.data.User;
+import org.alyskou.otus.data.generator.UserGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
@@ -16,13 +17,17 @@ import java.util.List;
 
 @Service
 public class UserService {
+    private static final int MAX_SAVING_BATCH_SIZE = 100;
+
     private final JdbcTemplate jdbcTemplate;
     private final PasswordEncoder passwordEncoder;
+    private final UserGenerator userGenerator;
 
     @Autowired
-    UserService(JdbcTemplate jdbcTemplate, PasswordEncoder passwordEncoder) {
+    UserService(JdbcTemplate jdbcTemplate, PasswordEncoder passwordEncoder, UserGenerator userGenerator) {
         this.jdbcTemplate = jdbcTemplate;
         this.passwordEncoder = passwordEncoder;
+        this.userGenerator = userGenerator;
     }
 
     public void saveNewUser(User user) {
@@ -43,7 +48,23 @@ public class UserService {
                 user.getCity());
     }
 
-    public void saveNewUsersBatch(ArrayList<User> users) {
+    public void generateUsers(int count) {
+        ArrayList<User> users = new ArrayList<>();
+        int j = 0;
+        for (int i = 0; i < count; i++) {
+            users.add(userGenerator.generateRandomUser());
+            j++;
+
+            if (j >= MAX_SAVING_BATCH_SIZE || i + 1 == count) {
+                System.out.printf("Storing %d/%d generated users\n", i + 1, count);
+                saveNewUsersBatch(users);
+                j = 0;
+                users = new ArrayList<>();
+            }
+        }
+    }
+
+    private void saveNewUsersBatch(ArrayList<User> users) {
         long startTimestamp = System.currentTimeMillis();
         jdbcTemplate.batchUpdate(
                 "insert into users values(?,?,?,?,?,?,?,?)",
@@ -105,5 +126,13 @@ public class UserService {
                 "select to_email from friendships where from_email = ?",
                 String.class,
                 email);
+    }
+
+    public List<User> findUsersByName(String firstNamePrefix, String lastNamePrefix) {
+        return jdbcTemplate.query(
+                "select * from users where first_name like ? and last_name like ? limit 1000",
+                 new User.UserRowMapper(),
+                firstNamePrefix + "%",
+                lastNamePrefix + "%");
     }
 }

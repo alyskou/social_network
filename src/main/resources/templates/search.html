@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>User search</title>
+</head>
+<body>
+<h1>User search</h1>
+<form action="/search" method="POST">
+    <table>
+        <tr>
+            <td>First name prefix</td>
+            <td><input th:name="firstNamePrefix"></td>
+        </tr>
+        <tr>
+            <td>Last name prefix</td>
+            <td><input th:name="lastNamePrefix"></td>
+        </tr>
+    </table>
+    <button type="submit">find</button>
+</form>
+
+<div th:if="${users != null}">
+    <div th:if="${#lists.isEmpty(users)}">
+        <h2>No matching users found</h2>
+    </div>
+
+    <div th:if="${not #lists.isEmpty(users)}">
+        <h2 th:text="${#lists.size(users) + ' user(s) found'}">5 users found</h2>
+        <ul>
+            <li th:each="user :${users}" style="padding: 5px">
+                <a th:href="@{'user?email=' + ${user.email}}"
+                   th:text="${user.firstName + ' ' + user.lastName + ' (' + user.age + ' years, ' + user.getCity() + ')'}"></a>
+            </li>
+        </ul>
+    </div>
+</div>
+</body>
+</html>

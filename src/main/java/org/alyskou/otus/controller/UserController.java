@@ -1,7 +1,6 @@
 package org.alyskou.otus.controller;
 
 import org.alyskou.otus.data.User;
-import org.alyskou.otus.data.generator.UserGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -15,15 +14,11 @@ import java.util.List;
 
 @Controller
 public class UserController {
-    private static final int MAX_SAVING_BATCH_SIZE = 100;
-
     private final UserService userService;
-    private final UserGenerator userGenerator;
 
     @Autowired
-    UserController(UserService userService, UserGenerator userGenerator) {
+    UserController(UserService userService) {
         this.userService = userService;
-        this.userGenerator = userGenerator;
     }
 
     @GetMapping("/new")
@@ -86,25 +81,27 @@ public class UserController {
 
     @PostMapping("/generate_users")
     public String generateUsers(@ModelAttribute("userCount") int count) {
-        ArrayList<User> users = new ArrayList<>();
-        int j = 0;
-        for (int i = 0; i < count; i++) {
-            users.add(userGenerator.generateRandomUser());
-            j++;
-
-            if (j >= MAX_SAVING_BATCH_SIZE || i + 1 == count) {
-                System.out.printf("Storing %d/%d generated users\n", i + 1, count);
-                userService.saveNewUsersBatch(users);
-                j = 0;
-                users = new ArrayList<>();
-            }
-        }
-
+        userService.generateUsers(count);
         return "redirect:/all_users";
     }
 
     @GetMapping("/")
     public String getHomePage() {
         return "redirect:/all_users";
+    }
+
+    @GetMapping("/search")
+    public String getSearch() {
+        return "search";
+    }
+
+    @PostMapping("/search")
+    public String doSearch(
+            @ModelAttribute("firstNamePrefix") String firstNamePrefix,
+            @ModelAttribute("lastNamePrefix") String lastNamePrefix,
+            Model model) {
+        List<User> users = userService.findUsersByName(firstNamePrefix, lastNamePrefix);
+        model.addAttribute("users", users);
+        return "search";
     }
 }
