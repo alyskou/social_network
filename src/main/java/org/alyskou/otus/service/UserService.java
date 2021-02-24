@@ -3,6 +3,7 @@ package org.alyskou.otus.service;
 import org.alyskou.otus.data.User;
 import org.alyskou.otus.data.generator.UserGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -17,15 +18,20 @@ import java.util.List;
 
 @Service
 public class UserService {
-    private static final int MAX_SAVING_BATCH_SIZE = 100;
+    private static final int MAX_SAVING_BATCH_SIZE = 1;
 
-    private final JdbcTemplate jdbcTemplate;
+    private final JdbcTemplate masterJdbc;
+    private final JdbcTemplate slaveJdbc;
     private final PasswordEncoder passwordEncoder;
     private final UserGenerator userGenerator;
 
     @Autowired
-    UserService(JdbcTemplate jdbcTemplate, PasswordEncoder passwordEncoder, UserGenerator userGenerator) {
-        this.jdbcTemplate = jdbcTemplate;
+    UserService(@Qualifier("jdbcMaster") JdbcTemplate masterJdbc,
+                @Qualifier("jdbcSlave") JdbcTemplate slaveJdbc,
+                PasswordEncoder passwordEncoder,
+                UserGenerator userGenerator) {
+        this.masterJdbc = masterJdbc;
+        this.slaveJdbc = slaveJdbc;
         this.passwordEncoder = passwordEncoder;
         this.userGenerator = userGenerator;
     }
@@ -36,7 +42,7 @@ public class UserService {
             throw new IllegalArgumentException(String.format("User with email [%s] already exists", user.getEmail()));
         }
 
-        jdbcTemplate.update(
+        masterJdbc.update(
                 "insert into users values(?,?,?,?,?,?,?,?)",
                 user.getEmail(),
                 passwordEncoder.encode(user.getPassword()),
@@ -66,7 +72,7 @@ public class UserService {
 
     private void saveNewUsersBatch(ArrayList<User> users) {
         long startTimestamp = System.currentTimeMillis();
-        jdbcTemplate.batchUpdate(
+        masterJdbc.batchUpdate(
                 "insert into users values(?,?,?,?,?,?,?,?)",
                 new BatchPreparedStatementSetter() {
                     @Override
@@ -97,7 +103,7 @@ public class UserService {
     public User getUser(String email) {
         User user;
         try {
-            user =  jdbcTemplate.queryForObject(
+            user =  masterJdbc.queryForObject(
                     "select * from users where email = ?",
                     new User.UserRowMapper(),
                     email);
@@ -114,22 +120,22 @@ public class UserService {
     }
 
     public List<User> getAllUsers() {
-        return jdbcTemplate.query("select * from users limit 1000", new User.UserRowMapper());
+        return slaveJdbc.query("select * from users limit 1000", new User.UserRowMapper());
     }
 
     public void addFriend(String fromEmail, String toEmail) {
-        jdbcTemplate.update("insert into friendships values(?, ?)", fromEmail, toEmail);
+        masterJdbc.update("insert into friendships values(?, ?)", fromEmail, toEmail);
     }
 
     public List<String> getUserFriends(String email) {
-         return jdbcTemplate.queryForList(
+         return masterJdbc.queryForList(
                 "select to_email from friendships where from_email = ?",
                 String.class,
                 email);
     }
 
     public List<User> findUsersByName(String firstNamePrefix, String lastNamePrefix) {
-        return jdbcTemplate.query(
+        return slaveJdbc.query(
                 "select * from users where first_name like ? and last_name like ? limit 1000",
                  new User.UserRowMapper(),
                 firstNamePrefix + "%",
