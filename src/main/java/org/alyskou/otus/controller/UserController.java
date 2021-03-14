@@ -1,6 +1,8 @@
 package org.alyskou.otus.controller;
 
+import org.alyskou.otus.data.News;
 import org.alyskou.otus.data.User;
+import org.alyskou.otus.service.NewsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -9,16 +11,17 @@ import org.alyskou.otus.service.UserService;
 
 import javax.validation.Valid;
 import java.security.Principal;
-import java.util.ArrayList;
 import java.util.List;
 
 @Controller
 public class UserController {
     private final UserService userService;
+    private final NewsService newsService;
 
     @Autowired
-    UserController(UserService userService) {
+    UserController(UserService userService, NewsService newsService) {
         this.userService = userService;
+        this.newsService = newsService;
     }
 
     @GetMapping("/new")
@@ -49,10 +52,12 @@ public class UserController {
         String selfEmail = principal.getName();
         User user = userService.getUser(email);
         List<String> selfFriends = userService.getUserFriends(selfEmail);
+        List<News> news = newsService.getOwnNews(email);
 
         model.addAttribute("user", user);
         model.addAttribute("isOwnPage", selfEmail.equals(email));
         model.addAttribute("isFriend", selfFriends.contains(email));
+        model.addAttribute("newsList", news);
         return "user";
     }
 
@@ -60,8 +65,11 @@ public class UserController {
     public String getUser(Principal principal, Model model) {
         String email = principal.getName();
         User user = userService.getUser(email);
+        List<News> news = newsService.getOwnNews(email);
+
         model.addAttribute("user", user);
         model.addAttribute("isOwnPage", true);
+        model.addAttribute("newsList", news);
         return "user";
     }
 
@@ -103,5 +111,22 @@ public class UserController {
         List<User> users = userService.findUsersByName(firstNamePrefix, lastNamePrefix);
         model.addAttribute("users", users);
         return "search";
+    }
+
+    @PostMapping("/post_news")
+    public String postNews(
+            @ModelAttribute("text") String text,
+            Principal principal) {
+        String email = principal.getName();
+        newsService.saveNews(email, text);
+        return "redirect:/me";
+    }
+
+    @GetMapping("/news")
+    public String newsFeed(Principal principal, Model model) {
+        String email = principal.getName();
+        List<News> newsList = newsService.getNewsFeed(email, false);
+        model.addAttribute("newsList", newsList);
+        return "news";
     }
 }
