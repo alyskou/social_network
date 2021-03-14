@@ -5,7 +5,7 @@
     <title th:text="${user.firstName + ' ' + user.lastName}">First Last</title>
 </head>
 <body>
-<a href="/all_users">See all users</a>
+<a href="/all_users">all users</a>
 
 <h1 th:text="${user.firstName + ' ' + user.lastName}">First Last</h1>
 
@@ -14,6 +14,8 @@
 <h4 th:text="${'Email: ' + user.email}">user@email.com</h4>
 <h4 th:text="${'City: ' + user.getCity()}"></h4>
 <h4 th:text="${'Interests: ' + user.getInterests()}"></h4>
+
+<hr>
 
 <h4>Friends:</h4>
 <ul>
@@ -31,12 +33,27 @@
 </div>
 
 <div th:if="${isOwnPage}">
-    <h4>(myself)</h4>
+    <a href="/news">news feed</a>
 </div>
 
 <div th:if="${isFriend}">
     <h4>(friend)</h4>
 </div>
+
+<hr>
+
+<form th:if="${isOwnPage}" action="/post_news" method="POST">
+    <input required th:name="text">
+    <button type="submit">post news</button>
+</form>
+
+<h4 th:text="${user.firstName + '''s news:'}">Alex's news</h4>
+<table>
+    <tr th:each="news : ${newsList}">
+        <td th:text="${#temporals.format(news.getTimestamp(), 'YYYY-MM-dd, HH:mm:ss') + ':    '}"></td>
+        <td th:text="${news.getText()}"></td>
+    </tr>
+</table>
 
 </body>
 </html>
