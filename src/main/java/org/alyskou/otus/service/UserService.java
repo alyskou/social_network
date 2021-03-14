@@ -21,17 +21,14 @@ public class UserService {
     private static final int MAX_SAVING_BATCH_SIZE = 1;
 
     private final JdbcTemplate masterJdbc;
-    private final JdbcTemplate slaveJdbc;
     private final PasswordEncoder passwordEncoder;
     private final UserGenerator userGenerator;
 
     @Autowired
     UserService(@Qualifier("jdbcMaster") JdbcTemplate masterJdbc,
-                @Qualifier("jdbcSlave") JdbcTemplate slaveJdbc,
                 PasswordEncoder passwordEncoder,
                 UserGenerator userGenerator) {
         this.masterJdbc = masterJdbc;
-        this.slaveJdbc = slaveJdbc;
         this.passwordEncoder = passwordEncoder;
         this.userGenerator = userGenerator;
     }
@@ -120,7 +117,7 @@ public class UserService {
     }
 
     public List<User> getAllUsers() {
-        return slaveJdbc.query("select * from users limit 1000", new User.UserRowMapper());
+        return masterJdbc.query("select * from users limit 1000", new User.UserRowMapper());
     }
 
     public void addFriend(String fromEmail, String toEmail) {
@@ -134,8 +131,15 @@ public class UserService {
                 email);
     }
 
+    public List<String> getUserFollowers(String email) {
+        return masterJdbc.queryForList(
+                "select from_email from friendships where to_email = ?",
+                String.class,
+                email);
+    }
+
     public List<User> findUsersByName(String firstNamePrefix, String lastNamePrefix) {
-        return slaveJdbc.query(
+        return masterJdbc.query(
                 "select * from users where first_name like ? and last_name like ? limit 1000",
                  new User.UserRowMapper(),
                 firstNamePrefix + "%",
